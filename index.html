@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مستكشف الملفات الشامل - BNG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700 pb-6">
+            <div>
+                <h1 class="text-4xl font-extrabold tracking-tight text-white">Outdex <span class="text-blue-500">BNG</span></h1>
+                <p class="text-slate-400 mt-2">استعراض وتحميل الملفات من كافة المجلدات</p>
+            </div>
+            <div id="stats" class="text-sm bg-slate-800 px-4 py-2 rounded-full border border-slate-700 text-slate-300">
+                جاري الإحصاء...
+            </div>
+        </header>
+
+        <div id="file-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="col-span-full text-center py-20">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                <p class="mt-4 text-slate-500">جاري جلب هيكل المستودع...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات المستودع
+        const owner = 'one-dr';
+        const repo = 'bng';
+        const branch = 'main'; // تأكد إذا كان main أو master
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`;
+        const rawBaseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/`;
+
+        async function loadAllFiles() {
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                if (!data.tree) throw new Error("لم يتم العثور على ملفات");
+
+                const grid = document.getElementById('file-grid');
+                grid.innerHTML = '';
+                
+                // تصفية النتائج: نريد الملفات فقط (blobs) وليس المجلدات (trees)
+                // وسنتجاهل ملف index.html
+                const files = data.tree.filter(item => item.type === 'blob' && item.path !== 'index.html');
+                
+                document.getElementById('stats').innerText = `${files.length} ملف تم العثور عليه`;
+
+                files.forEach(file => {
+                    const fileName = file.path.split('/').pop();
+                    const folderPath = file.path.includes('/') ? file.path.substring(0, file.path.lastIndexOf('/')) : 'الرئيسية';
+                    
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-800 border border-slate-700 p-5 rounded-xl hover:shadow-2xl hover:border-blue-500/50 transition-all group";
+                    
+                    card.innerHTML = `
+                        <div class="mb-4">
+                            <div class="text-[10px] uppercase tracking-wider text-blue-400 font-bold mb-1">${folderPath}</div>
+                            <h3 class="text-lg font-bold text-white truncate group-hover:text-blue-300 transition-colors" title="${file.path}">
+                                ${fileName}
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-1 uppercase">${fileName.split('.').pop()} File</p>
+                        </div>
+                        <div class="flex items-center justify-between mt-auto">
+                            <a href="${rawBaseUrl}${file.path}" download class="w-full text-center bg-slate-700 hover:bg-blue-600 text-white text-sm font-semibold py-2 rounded-lg transition-colors">
+                                تنزيل الملف
+                            </a>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('file-grid').innerHTML = `
+                    <div class="col-span-full bg-red-900/20 border border-red-900 text-red-400 p-4 rounded-lg text-center">
+                        فشل في تحميل الملفات. تأكد من أن اسم الفرع (main) صحيح.
+                    </div>
+                `;
+            }
+        }
+
+        loadAllFiles();
+    </script>
+</body>
+</html>
